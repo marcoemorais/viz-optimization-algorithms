@@ -159,12 +159,17 @@ def plot2d_solutions(**params):
 
     # Imbue title with simulation meta information.
     meta = load_meta(**params)
+    expmin, expxkmin = meta['exp_fxkmin'], meta['exp_xkmin']
+    expminstr = 'abs $\\min(f)$={0:.0f}'.format(expmin)
     algstr = algstr if len(algstr) > 4 else algstr.upper()
     algmeta = [('nx0','n'),('T0','$T_0$'),
                ('alpha','$\\alpha$'),('tol','tol')]
     algmetastr = ' '.join(['{0}={1}'.format(n2, meta[n1])
                            for n1, n2 in algmeta if n1 in meta])
     nitstr = 'nit={0:d}'.format(meta['nsteps'][trials[0]-1])
+    minfx = meta['f(xk)'][trials[0]-1]
+    minfmt = '.1e' if minfx < 1e-1 else '.1f'
+    minstr = '$\\min(f)$={0:{1}}'.format(minfx, minfmt)
 
     # Generate surface for filled contour plot.
     fx = globals()[params['func']]
@@ -174,10 +179,8 @@ def plot2d_solutions(**params):
     fig = plt.figure(figsize=(8,6))
     locator = getattr(ticker, ticker_locator)
     plt.contourf(x1, x2, z, locator=locator(), cmap='viridis', alpha=0.8)
-    if 'exp_xkmin' in meta:
-        exp_xkmin = meta['exp_xkmin']
-        plt.scatter(exp_xkmin[0],exp_xkmin[1], marker='D', c='red', s=40,
-                    label='$\min(f)$', alpha=0.6)
+    plt.scatter(expxkmin[0],expxkmin[1], marker='D', c='red', s=40,
+		label=expminstr, alpha=0.6)
     for trial in trials:
         steps = load_steps(**params, trial=trial)
         samples = np.linspace(0,len(steps)-1,nsamples,dtype=int)
@@ -186,7 +189,8 @@ def plot2d_solutions(**params):
                  marker=marker, c=color,
                  label='$x_k$, trial={:d}'.format(trial))
     plt.suptitle('Solution Trajectories: {0} Function'.format(funcstr))
-    plt.title('{0}, {1}, {2}'.format(algstr, nitstr, algmetastr))
+    plt.title('{0} {1} {2} {3}'.format(algstr, minstr, nitstr,
+                                       algmetastr))
     plt.xlabel('x1')
     plt.xlim(bounds[:2])
     plt.ylabel('x2')
@@ -201,6 +205,7 @@ def plot2d_solutions(**params):
         plt.savefig(plotfn)
     else:
         plt.show()
+    plt.close(fig)
 
 
 #
