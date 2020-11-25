@@ -178,7 +178,8 @@ def plot2d_solutions(**params):
 
     fig = plt.figure(figsize=(8,6))
     locator = getattr(ticker, ticker_locator)
-    plt.contourf(x1, x2, z, locator=locator(), cmap='viridis_r', alpha=0.8)
+    cs = plt.contourf(x1, x2, z, locator=locator(), cmap='viridis_r',
+                      alpha=0.7)
     plt.scatter(expxkmin[0],expxkmin[1], marker='D', c='red', s=40,
 		label=expminstr, alpha=1.0)
     for trial in trials:
@@ -197,7 +198,7 @@ def plot2d_solutions(**params):
     plt.xlim(bounds[:2])
     plt.ylabel('x2')
     plt.ylim(bounds[2:])
-    plt.colorbar(label=colorbar_label)
+    plt.colorbar(cs, label=colorbar_label)
     if show_legend:
         plt.legend()
     if params.get('plot2dfn_fmt') is not None:
