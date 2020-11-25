@@ -31,6 +31,8 @@ from autograd import grad
 from numpy import save
 from numpy.random import seed
 
+import scipy.optimize as opt
+
 
 #
 # BFGS Method
@@ -99,6 +101,33 @@ def bfgs(fx, gradfx, x0, tol, maxiter):
         # Save iteration history.
         steps[k,:] = np.hstack((xk, fx(xk), gradfxk))
 
+    return xk, steps
+
+
+# NOTE(mmorais): bfgs is failing on line search, use scipy instead.
+def scipy_bfgs(fx, gradfx, x0, tol, maxiter):
+    """
+    scipy_bfgs wraps scipy implementation of bfgs
+    """
+    # Save current and minimum position and value to history.
+    steps = np.zeros((maxiter, (x0.size*2)+1))
+    def make_callback():
+        k = 0
+        def callback(xk):
+            nonlocal k
+            # Save iteration history.
+            steps[k,:] = np.hstack((xk, fx(xk), gradfx(xk)))
+            k = k + 1
+        return callback
+
+    # Invoke scipy minimize with BFGS option.
+    res = opt.minimize(fx, x0, method='BFGS', jac=gradfx, tol=tol,
+                       options={'maxiter': maxiter}, callback=make_callback())
+
+    # Copy OptimizeResult to equivalent returned from bfgs.
+    xk = res.x
+    if res.nit < maxiter:
+        steps = steps[:-(maxiter-res.nit),:]
     return xk, steps
 
 
@@ -200,7 +229,7 @@ def sim_bfgs_rosenbrock(**kwargs):
     meta = init_meta(**params)
     meta.update(bounds=[-2.,2.,-2.,2.])
     meta.update(tol=1e-2)
-    meta.update(maxiter=20000)
+    meta.update(maxiter=1000)
 
     seed(params['seed'])
     fx, gradfx = rosenbrock, grad(rosenbrock)
@@ -230,7 +259,7 @@ def sim_bfgs_goldstein_price(**kwargs):
     meta = init_meta(**params)
     meta.update(bounds=[-2.,2.,-2.,2.])
     meta.update(tol=1e-2)
-    meta.update(maxiter=20000)
+    meta.update(maxiter=1000)
 
     seed(params['seed'])
     fx, gradfx = goldstein_price, grad(goldstein_price)
@@ -240,7 +269,7 @@ def sim_bfgs_goldstein_price(**kwargs):
         params.update(trial=trial)
         x0 = randx0(meta['bounds'])
         t0 = time.perf_counter()
-        xk, steps = bfgs(fx, gradfx, x0, tol, maxiter)
+        xk, steps = scipy_bfgs(fx, gradfx, x0, tol, maxiter)
         t1 = time.perf_counter()
         meta['elapsed_sec'][ind] = t1-t0
         meta['nsteps'][ind] = len(steps)
@@ -258,7 +287,7 @@ def sim_bfgs(**kwargs):
     os.makedirs(kwargs['base_dirn'], exist_ok=True)
     os.chmod(kwargs['base_dirn'], 0o755)
     sim_bfgs_rosenbrock(**kwargs)
-    #sim_bfgs_goldstein_price(**kwargs)
+    sim_bfgs_goldstein_price(**kwargs)
 
 
 if __name__ == '__main__':
