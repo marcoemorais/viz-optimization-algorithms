@@ -270,6 +270,8 @@ def sim_particle_swarm_rosenbrock(**kwargs):
     meta.update(p1=1.)
     meta.update(p2=1.)
     meta.update(niter=250)
+    meta.update(exp_xkmin=[1.,1.])
+    meta.update(exp_fxkmin=0.)
 
     seed(params['seed'])
     fx = rosenbrock
@@ -304,6 +306,8 @@ def sim_particle_swarm_goldstein_price(**kwargs):
     meta.update(p1=1.)
     meta.update(p2=1.)
     meta.update(niter=500)
+    meta.update(exp_xkmin=[0.,-1.])
+    meta.update(exp_fxkmin=3.)
 
     seed(params['seed'])
     fx = goldstein_price
@@ -338,6 +342,8 @@ def sim_particle_swarm_bartels_conn(**kwargs):
     meta.update(p1=1.)
     meta.update(p2=1.)
     meta.update(niter=400)
+    meta.update(exp_xkmin=[0.,0.])
+    meta.update(exp_fxkmin=1.)
 
     seed(params['seed'])
     fx = bartels_conn
@@ -372,6 +378,8 @@ def sim_particle_swarm_egg_crate(**kwargs):
     meta.update(p1=1.)
     meta.update(p2=1.)
     meta.update(niter=400)
+    meta.update(exp_xkmin=[0.,0.])
+    meta.update(exp_fxkmin=0.)
 
     seed(params['seed'])
     fx = egg_crate

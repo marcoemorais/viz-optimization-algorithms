@@ -230,6 +230,8 @@ def sim_bfgs_rosenbrock(**kwargs):
     meta.update(bounds=[-2.,2.,-2.,2.])
     meta.update(tol=1e-2)
     meta.update(maxiter=1000)
+    meta.update(exp_xkmin=[1.,1.])
+    meta.update(exp_fxkmin=0.)
 
     seed(params['seed'])
     fx, gradfx = rosenbrock, grad(rosenbrock)
@@ -260,6 +262,8 @@ def sim_bfgs_goldstein_price(**kwargs):
     meta.update(bounds=[-2.,2.,-2.,2.])
     meta.update(tol=1e-2)
     meta.update(maxiter=1000)
+    meta.update(exp_xkmin=[0.,-1.])
+    meta.update(exp_fxkmin=3.)
 
     seed(params['seed'])
     fx, gradfx = goldstein_price, grad(goldstein_price)

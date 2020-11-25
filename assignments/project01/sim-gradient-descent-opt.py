@@ -195,6 +195,8 @@ def sim_gradient_descent_rosenbrock(**kwargs):
     meta.update(alpha=1e-3)
     meta.update(tol=1e-2)
     meta.update(maxiter=20000)
+    meta.update(exp_xkmin=[1.,1.])
+    meta.update(exp_fxkmin=0.)
 
     seed(params['seed'])
     fx, gradfx = rosenbrock, grad(rosenbrock)
@@ -226,6 +228,8 @@ def sim_gradient_descent_goldstein_price(**kwargs):
     meta.update(alpha=1e-5)
     meta.update(tol=1e-2)
     meta.update(maxiter=20000)
+    meta.update(exp_xkmin=[0.,-1.])
+    meta.update(exp_fxkmin=3.)
 
     seed(params['seed'])
     fx, gradfx = goldstein_price, grad(goldstein_price)
