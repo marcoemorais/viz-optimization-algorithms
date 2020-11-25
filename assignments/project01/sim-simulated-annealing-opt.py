@@ -254,7 +254,7 @@ def sim_simulated_annealing_rosenbrock(**kwargs):
     meta.update(mean=[1.,1.])
     meta.update(cov=[[1.,0.],[0.,1.]])
     meta.update(T0=1.)
-    meta.update(niter=20000)
+    meta.update(niter=1000)
 
     seed(params['seed'])
     fx = rosenbrock
@@ -288,7 +288,7 @@ def sim_simulated_annealing_goldstein_price(**kwargs):
     meta.update(mean=[1.,1.])
     meta.update(cov=[[1.,0.],[0.,1.]])
     meta.update(T0=1.)
-    meta.update(niter=20000)
+    meta.update(niter=2000)
 
     seed(params['seed'])
     fx = goldstein_price
@@ -322,7 +322,7 @@ def sim_simulated_annealing_bartels_conn(**kwargs):
     meta.update(mean=[1.,1.])
     meta.update(cov=[[1.,0.],[0.,1.]])
     meta.update(T0=1.)
-    meta.update(niter=20000)
+    meta.update(niter=1000)
 
     seed(params['seed'])
     fx = bartels_conn
@@ -356,7 +356,7 @@ def sim_simulated_annealing_egg_crate(**kwargs):
     meta.update(mean=[1.,1.])
     meta.update(cov=[[1.,0.],[0.,1.]])
     meta.update(T0=1.)
-    meta.update(niter=30000)
+    meta.update(niter=2000)
 
     seed(params['seed'])
     fx = egg_crate
