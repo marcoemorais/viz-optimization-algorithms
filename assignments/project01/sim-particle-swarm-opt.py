@@ -225,6 +225,7 @@ def init_meta(**params):
         'func': params['func'],
         'seed': params['seed'],
         'ntrials': params['ntrials'],
+        'x0func': params['x0func'].__name__,
         'elapsed_sec': [None]*params['ntrials'],
         'nsteps': [None]*params['ntrials'],
         'x0': [None]*params['ntrials'],
@@ -235,13 +236,46 @@ def init_meta(**params):
     return meta
 
 
-def randx0(bounds, count=1):
-    """Return random initial position(s) x0 based on domain boundaries."""
-    x0 = np.zeros((count, len(bounds)//2))
-    for i in range(count):
-        for j, (xmin,xmax) in enumerate(zip(bounds[0::2],bounds[1::2])):
-            x0[i,j] = xmin + 0.8*(xmax-xmin)*np.random.random()
-    return x0
+def randx0(nx0, **params):
+    """Return random initial position x0 based on domain boundaries."""
+    ntrials, bounds = params['ntrials'], params['bounds']
+    x0s = []  # Each trial holds nx0 particles.
+    for _ in range(ntrials):
+        particles = np.zeros((nx0, len(bounds)//2))
+        for i in range(nx0):
+            for j, (xmin,xmax) in enumerate(zip(bounds[0::2],bounds[1::2])):
+                particles[i,j] = xmin + 0.8*(xmax-xmin)*np.random.random()
+        x0s.append(particles)
+    return x0s
+
+
+def tilex0_particles(func):
+    """Returns tiled particles for a single trial."""
+    if func in set(('rosenbrock','goldstein_price')):
+        x1 = np.array([-1.5,0.0,1.5])
+        x2 = np.array([1.8,0.8,-0.8,-1.8])
+        x0s = np.transpose([np.tile(x1, len(x2)), np.repeat(x2, len(x1))])
+        # Remove points close to the center.
+        return x0s[np.invert((x0s[:,0]==0) & (np.abs(x0s[:,1])==0.8))]
+    elif func in set(('bartels_conn','egg_crate')):
+        x1 = np.array([-3.5,0.0,3.5])
+        x2 = np.array([4.,1.5,-1.5,-4.])
+        x0s = np.transpose([np.tile(x1, len(x2)), np.repeat(x2, len(x1))])
+        # Remove points close to the center.
+        return x0s[np.invert((x0s[:,0]==0) & (np.abs(x0s[:,1])==1.5))]
+    else:
+        raise ValueError('no tiling for function named: {0}', func)
+
+
+def tilex0(nx0, **params):
+    """Return tiled initial position x0 based on test function."""
+    ntrials, func = params['ntrials'], params['func']
+    x0s = []  # Each trial holds nx0 particles.
+    particles = tilex0_particles(func)
+    for _ in range(ntrials):
+        inds = np.random.choice(range(particles.shape[0]), nx0, replace=False)
+        x0s.append(particles[inds])
+    return x0s
 
 
 def write_savefn(steps, **params):
@@ -278,9 +312,11 @@ def sim_particle_swarm_rosenbrock(**kwargs):
     omega, p1, p2 = meta['omega'], meta['p1'], meta['p2']
     bounds, niter = meta['bounds'], meta['niter']
 
-    for ind, trial in enumerate(range(1,params['ntrials']+1)):
+    trials = range(1,params['ntrials']+1)
+    x0s = params['x0func'](meta['nx0'], **params)
+
+    for ind, (trial,x0) in enumerate(zip(trials,x0s)):
         params.update(trial=trial)
-        x0 = randx0(meta['bounds'], count=meta['nx0'])
         t0 = time.perf_counter()
         xk, steps = particle_swarm(fx, x0, omega, p1, p2, bounds, niter)
         t1 = time.perf_counter()
@@ -314,9 +350,11 @@ def sim_particle_swarm_goldstein_price(**kwargs):
     omega, p1, p2 = meta['omega'], meta['p1'], meta['p2']
     bounds, niter = meta['bounds'], meta['niter']
 
-    for ind, trial in enumerate(range(1,params['ntrials']+1)):
+    trials = range(1,params['ntrials']+1)
+    x0s = params['x0func'](meta['nx0'], **params)
+
+    for ind, (trial,x0) in enumerate(zip(trials,x0s)):
         params.update(trial=trial)
-        x0 = randx0(meta['bounds'], count=meta['nx0'])
         t0 = time.perf_counter()
         xk, steps = particle_swarm(fx, x0, omega, p1, p2, bounds, niter)
         t1 = time.perf_counter()
@@ -337,11 +375,11 @@ def sim_particle_swarm_bartels_conn(**kwargs):
     params.update(func='bartels_conn')
     meta = init_meta(**params)
     meta.update(bounds=[-5.,5.,-5.,5.])
-    meta.update(nx0=5)
+    meta.update(nx0=4)
     meta.update(omega=1.)
     meta.update(p1=1.)
     meta.update(p2=1.)
-    meta.update(niter=400)
+    meta.update(niter=500)
     meta.update(exp_xkmin=[0.,0.])
     meta.update(exp_fxkmin=1.)
 
@@ -350,9 +388,11 @@ def sim_particle_swarm_bartels_conn(**kwargs):
     omega, p1, p2 = meta['omega'], meta['p1'], meta['p2']
     bounds, niter = meta['bounds'], meta['niter']
 
-    for ind, trial in enumerate(range(1,params['ntrials']+1)):
+    trials = range(1,params['ntrials']+1)
+    x0s = params['x0func'](meta['nx0'], **params)
+
+    for ind, (trial,x0) in enumerate(zip(trials,x0s)):
         params.update(trial=trial)
-        x0 = randx0(meta['bounds'], count=meta['nx0'])
         t0 = time.perf_counter()
         xk, steps = particle_swarm(fx, x0, omega, p1, p2, bounds, niter)
         t1 = time.perf_counter()
@@ -373,11 +413,11 @@ def sim_particle_swarm_egg_crate(**kwargs):
     params.update(func='egg_crate')
     meta = init_meta(**params)
     meta.update(bounds=[-5.,5.,-5.,5.])
-    meta.update(nx0=5)
+    meta.update(nx0=4)
     meta.update(omega=1.)
     meta.update(p1=1.)
     meta.update(p2=1.)
-    meta.update(niter=400)
+    meta.update(niter=500)
     meta.update(exp_xkmin=[0.,0.])
     meta.update(exp_fxkmin=0.)
 
@@ -386,9 +426,11 @@ def sim_particle_swarm_egg_crate(**kwargs):
     omega, p1, p2 = meta['omega'], meta['p1'], meta['p2']
     bounds, niter = meta['bounds'], meta['niter']
 
-    for ind, trial in enumerate(range(1,params['ntrials']+1)):
+    trials = range(1,params['ntrials']+1)
+    x0s = params['x0func'](meta['nx0'], **params)
+
+    for ind, (trial,x0) in enumerate(zip(trials,x0s)):
         params.update(trial=trial)
-        x0 = randx0(meta['bounds'], count=meta['nx0'])
         t0 = time.perf_counter()
         xk, steps = particle_swarm(fx, x0, omega, p1, p2, bounds, niter)
         t1 = time.perf_counter()
@@ -416,7 +458,8 @@ def sim_particle_swarm(**kwargs):
 if __name__ == '__main__':
     opts = {
         'alg': 'particle_swarm',
-        'ntrials': 10,
+        'ntrials': 12,
+        'x0func': tilex0,
         'seed': 8517,
         'base_dirn': './sims/',
         'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',

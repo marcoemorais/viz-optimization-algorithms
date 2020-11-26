@@ -153,6 +153,7 @@ def init_meta(**params):
         'func': params['func'],
         'seed': params['seed'],
         'ntrials': params['ntrials'],
+        'x0func': params['x0func'].__name__,
         'elapsed_sec': [None]*params['ntrials'],
         'nsteps': [None]*params['ntrials'],
         'x0': [None]*params['ntrials'],
@@ -163,12 +164,25 @@ def init_meta(**params):
     return meta
 
 
-def randx0(bounds):
+def randx0(**params):
     """Return random initial position x0 based on domain boundaries."""
-    x0 = np.zeros(len(bounds)//2)
-    for ind, (xmin,xmax) in enumerate(zip(bounds[0::2],bounds[1::2])):
-        x0[ind] = xmin + 0.8*(xmax-xmin)*np.random.random()
-    return x0
+    ntrials, bounds = params['ntrials'], params['bounds']
+    x0s = np.zeros((ntrials, len(bounds)//2))
+    for i in range(ntrials):
+        for j, (xmin,xmax) in enumerate(zip(bounds[0::2],bounds[1::2])):
+            x0s[i,j] = xmin + 0.8*(xmax-xmin)*np.random.random()
+    return x0s
+
+
+def tilex0(**params):
+    """Return tiled initial position x0 based on test function."""
+    func = params['func']
+    if func in set(('rosenbrock','goldstein_price')):
+        x1 = np.array([-1.5,0.0,1.5])
+        x2 = np.array([1.8,0.8,-0.8,-1.8])
+        x0s = np.transpose([np.tile(x1, len(x2)), np.repeat(x2, len(x1))])
+        return x0s
+    raise ValueError('no tiling for function named: {0}', func)
 
 
 def write_savefn(steps, **params):
@@ -202,9 +216,11 @@ def sim_gradient_descent_rosenbrock(**kwargs):
     fx, gradfx = rosenbrock, grad(rosenbrock)
     alpha, tol, maxiter = meta['alpha'], meta['tol'], meta['maxiter']
 
-    for ind, trial in enumerate(range(1,params['ntrials']+1)):
+    trials = range(1,params['ntrials']+1)
+    x0s = params['x0func'](**params)
+
+    for ind, (trial,x0) in enumerate(zip(trials,x0s)):
         params.update(trial=trial)
-        x0 = randx0(meta['bounds'])
         t0 = time.perf_counter()
         xk, steps = gradient_descent(fx, gradfx, x0, alpha, tol, maxiter)
         t1 = time.perf_counter()
@@ -235,9 +251,11 @@ def sim_gradient_descent_goldstein_price(**kwargs):
     fx, gradfx = goldstein_price, grad(goldstein_price)
     alpha, tol, maxiter = meta['alpha'], meta['tol'], meta['maxiter']
 
-    for ind, trial in enumerate(range(1,params['ntrials']+1)):
+    trials = range(1,params['ntrials']+1)
+    x0s = params['x0func'](**params)
+
+    for ind, (trial,x0) in enumerate(zip(trials,x0s)):
         params.update(trial=trial)
-        x0 = randx0(meta['bounds'])
         t0 = time.perf_counter()
         xk, steps = gradient_descent(fx, gradfx, x0, alpha, tol, maxiter)
         t1 = time.perf_counter()
@@ -263,7 +281,8 @@ def sim_gradient_descent(**kwargs):
 if __name__ == '__main__':
     opts = {
         'alg': 'gradient_descent',
-        'ntrials': 10,
+        'ntrials': 12,
+        'x0func': tilex0,
         'seed': 8517,
         'base_dirn': './sims/',
         'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',

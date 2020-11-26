@@ -338,7 +338,7 @@ def plot2d(**kwargs):
 
 if __name__ == '__main__':
     opts = {
-        'ntrials': 10,
+        'ntrials': 12,
         'base_dirn': './sims/',
         'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
         'metafn_fmt': '{alg}-{func}-meta.json',
