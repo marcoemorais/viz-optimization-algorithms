@@ -147,13 +147,12 @@ def plot3d_solutions(**params):
     """
     algstr = params['alg'].replace('_',' ').title()
     funcstr = params['func'].replace('_',' ').title()
+    ngridpts = params.get('ngridpts', 500)
     bounds = params['bounds']
     elev = params['elev']
     azim = params['azim']
     trials = params['trials']
-    nsamples = params['nsamples']
     xkmind = params.get('xkmind', slice(2))
-    marker = params.get('marker', '.')
     color = params.get('color', 'crimson')
     show_legend = params.get('show_legend', True)
 
@@ -166,37 +165,47 @@ def plot3d_solutions(**params):
                ('alpha','$\\alpha$'),('tol','tol')]
     algmetastr = ' '.join(['{0}={1}'.format(n2, meta[n1])
                            for n1, n2 in algmeta if n1 in meta])
-    nitstr = 'nit={0:d}'.format(meta['nsteps'][trials[0]-1])
-    minfx = meta['f(xk)'][trials[0]-1]
-    minfmt = '.2e' if minfx < 1e-1 else '.1f'
-    minstr = '$\\min(f)$={0:{1}}'.format(minfx, minfmt)
+    nitstr, minstr = '', ''
+    if len(trials) == 1:
+        nitstr = 'nit={0:d}'.format(meta['nsteps'][trials[0]-1])
+        minfx = meta['f(xk)'][trials[0]-1]
+        minfmt = '.2e' if minfx < 1e-1 else '.1f'
+        minstr = '$\\min(f)$={0:{1}}'.format(minfx, minfmt)
+    metastrs = [algstr, minstr, nitstr, algmetastr]
+    titlestr = ' '.join([s for s in metastrs if len(s) > 0])
 
     # Generate surface for filled contour plot.
     fx = globals()[params['func']]
     start, stop = np.min(bounds[::2]), np.max(bounds[1::2])
-    x1, x2, z = surface(fx, start, stop, params['ngridpts'])
+    x1, x2, z = surface(fx, start, stop, ngridpts)
 
     fig = plt.figure(figsize=(10,8))
     ax = fig.gca(projection='3d')
     ax.view_init(elev=elev, azim=azim)
-    surf = ax.plot_surface(x1, x2, z, cmap='viridis_r', alpha=0.8)
+    surf = ax.plot_surface(x1, x2, z, cmap='viridis_r', alpha=0.7)
     fig.colorbar(surf, shrink=0.5, aspect=5)
     ax.scatter3D([expxkmin[0]],[expxkmin[1]], [expmin],
-                 marker='D', c='black', s=40,
-                 label=expminstr, alpha=1.0)
+                 marker='D', c='black', s=30,
+                 label=expminstr)
     for trial in trials:
+        # Plot initial point.
+        x0 = np.array(meta['x0'][trial-1]).reshape(-1,2)
+        ax.scatter3D(x0[:,0], x0[:,1], [fx(xk) for xk in x0],
+                     marker='X', c='dodgerblue', s=30,
+                     label='$x_0$')
+        # Plot solution trajectory.
         steps = load_steps(**params, trial=trial)
-        samples = np.linspace(0,len(steps)-1,nsamples,dtype=int)
-        xks = steps[samples,xkmind]
+        xks = steps[:,xkmind]
+        if np.isnan(xks).any():
+            continue  # Skip current solution.
         xks = np.clip(xks, a_min=bounds[::2], a_max=bounds[1::2])
         ax.plot3D([xk[0] for xk in xks],
                   [xk[1] for xk in xks],
                   [fx(xk) for xk in xks],
-                  marker=marker, c=color, alpha=1.0,
+                  ls='-', lw=1, c=color,
                   label='$x_k$, trial={:d}'.format(trial))
     plt.suptitle('Solution Trajectories: {0} Function'.format(funcstr))
-    plt.title('{0} {1} {2} {3}'.format(algstr, minstr, nitstr,
-                                       algmetastr))
+    plt.title(titlestr)
     plt.xlabel('x1')
     plt.xlim(bounds[:2])
     plt.ylabel('x2')
@@ -223,165 +232,129 @@ def plot3d(**kwargs):
         {
             'alg': 'gradient_descent',
             'func': 'rosenbrock',
-            'trials': [2],
             'base_dirn': './sims/',
             'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
             'metafn_fmt': '{alg}-{func}-meta.json',
             'bounds': [-2.,2.,-2.,2.],
             'elev': 30,
             'azim': 140,
-            'ngridpts': 500,
-            'nsamples': 20,
         },
         {
             'alg': 'bfgs',
             'func': 'rosenbrock',
-            'trials': [2],
             'base_dirn': './sims/',
             'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
             'metafn_fmt': '{alg}-{func}-meta.json',
             'bounds': [-2.,2.,-2.,2.],
             'elev': 30,
             'azim': 140,
-            'ngridpts': 500,
-            'nsamples': 20,
         },
         {
             'alg': 'simulated_annealing',
             'func': 'rosenbrock',
-            'trials': [6],
             'base_dirn': './sims/',
             'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
             'metafn_fmt': '{alg}-{func}-meta.json',
             'bounds': [-2.,2.,-2.,2.],
             'elev': 30,
             'azim': 140,
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(3,5),
         },
         {
             'alg': 'particle_swarm',
             'func': 'rosenbrock',
-            'trials': [3],
             'base_dirn': './sims/',
             'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
             'metafn_fmt': '{alg}-{func}-meta.json',
             'bounds': [-2.,2.,-2.,2.],
             'elev': 30,
             'azim': 140,
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(4,6),
         },
         {
             'alg': 'gradient_descent',
             'func': 'goldstein_price',
-            'trials': [1],
             'base_dirn': './sims/',
             'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
             'metafn_fmt': '{alg}-{func}-meta.json',
             'bounds': [-2.,2.,-2.,2.],
             'elev': 25,
             'azim': 235,
-            'ngridpts': 500,
-            'nsamples': 20,
         },
         {
             'alg': 'bfgs',
             'func': 'goldstein_price',
-            'trials': [2],
             'base_dirn': './sims/',
             'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
             'metafn_fmt': '{alg}-{func}-meta.json',
             'bounds': [-2.,2.,-2.,2.],
             'elev': 25,
             'azim': 235,
-            'ngridpts': 500,
-            'nsamples': 20,
         },
         {
             'alg': 'simulated_annealing',
             'func': 'goldstein_price',
-            'trials': [6],
             'base_dirn': './sims/',
             'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
             'metafn_fmt': '{alg}-{func}-meta.json',
             'bounds': [-2.,2.,-2.,2.],
             'elev': 25,
             'azim': 235,
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(3,5),
         },
         {
             'alg': 'particle_swarm',
             'func': 'goldstein_price',
-            'trials': [10],
             'base_dirn': './sims/',
             'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
             'metafn_fmt': '{alg}-{func}-meta.json',
             'bounds': [-2.,2.,-2.,2.],
             'elev': 25,
             'azim': 235,
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(4,6),
         },
         {
             'alg': 'simulated_annealing',
             'func': 'bartels_conn',
-            'trials': [3],
             'base_dirn': './sims/',
             'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
             'metafn_fmt': '{alg}-{func}-meta.json',
             'bounds': [-5.,5.,-5.,5.],
             'elev': 25,
             'azim': 135,
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(3,5),
         },
         {
             'alg': 'particle_swarm',
             'func': 'bartels_conn',
-            'trials': [2],
             'base_dirn': './sims/',
             'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
             'metafn_fmt': '{alg}-{func}-meta.json',
             'bounds': [-5.,5.,-5.,5.],
             'elev': 25,
             'azim': 135,
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(4,6),
         },
         {
             'alg': 'simulated_annealing',
             'func': 'egg_crate',
-            'trials': [5],
             'base_dirn': './sims/',
             'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
             'metafn_fmt': '{alg}-{func}-meta.json',
             'bounds': [-5.,5.,-5.,5.],
             'elev': 70,
             'azim': 135,
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(3,5),
         },
         {
             'alg': 'particle_swarm',
             'func': 'egg_crate',
-            'trials': [4],
             'base_dirn': './sims/',
             'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
             'metafn_fmt': '{alg}-{func}-meta.json',
             'bounds': [-5.,5.,-5.,5.],
             'elev': 70,
             'azim': 135,
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(4,6),
         }
     ]
