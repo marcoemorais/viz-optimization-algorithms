@@ -303,7 +303,7 @@ def sim_particle_swarm_rosenbrock(**kwargs):
     meta.update(omega=1.)
     meta.update(p1=1.)
     meta.update(p2=1.)
-    meta.update(niter=250)
+    meta.update(niter=50)
     meta.update(exp_xkmin=[1.,1.])
     meta.update(exp_fxkmin=0.)
 
@@ -375,11 +375,11 @@ def sim_particle_swarm_bartels_conn(**kwargs):
     params.update(func='bartels_conn')
     meta = init_meta(**params)
     meta.update(bounds=[-5.,5.,-5.,5.])
-    meta.update(nx0=4)
+    meta.update(nx0=3)
     meta.update(omega=1.)
     meta.update(p1=1.)
     meta.update(p2=1.)
-    meta.update(niter=500)
+    meta.update(niter=100)
     meta.update(exp_xkmin=[0.,0.])
     meta.update(exp_fxkmin=1.)
 

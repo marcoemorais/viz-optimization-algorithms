@@ -147,11 +147,10 @@ def plot2d_solutions(**params):
     """
     algstr = params['alg'].replace('_',' ').title()
     funcstr = params['func'].replace('_',' ').title()
+    ngridpts = params.get('ngridpts', 500)
     bounds = params['bounds']
     trials = params['trials']
-    nsamples = params['nsamples']
     xkmind = params.get('xkmind', slice(2))
-    marker = params.get('marker', '.')
     color = params.get('color', 'darkorange')
     ticker_locator = params.get('ticker_locator', 'LinearLocator')
     colorbar_label = params.get('colorbar_label', 'z')
@@ -166,34 +165,43 @@ def plot2d_solutions(**params):
                ('alpha','$\\alpha$'),('tol','tol')]
     algmetastr = ' '.join(['{0}={1}'.format(n2, meta[n1])
                            for n1, n2 in algmeta if n1 in meta])
-    nitstr = 'nit={0:d}'.format(meta['nsteps'][trials[0]-1])
-    minfx = meta['f(xk)'][trials[0]-1]
-    minfmt = '.1e' if minfx < 1e-1 else '.1f'
-    minstr = '$\\min(f)$={0:{1}}'.format(minfx, minfmt)
+    nitstr, minstr = '', ''
+    if len(trials) == 1:
+        nitstr = 'nit={0:d}'.format(meta['nsteps'][trials[0]-1])
+        minfx = meta['f(xk)'][trials[0]-1]
+        minfmt = '.2e' if minfx < 1e-1 else '.1f'
+        minstr = '$\\min(f)$={0:{1}}'.format(minfx, minfmt)
+    metastrs = [algstr, minstr, nitstr, algmetastr]
+    titlestr = ' '.join([s for s in metastrs if len(s) > 0])
 
     # Generate surface for filled contour plot.
     fx = globals()[params['func']]
     start, stop = np.min(bounds[::2]), np.max(bounds[1::2])
-    x1, x2, z = surface(fx, start, stop, params['ngridpts'])
+    x1, x2, z = surface(fx, start, stop, ngridpts)
 
     fig = plt.figure(figsize=(8,6))
     locator = getattr(ticker, ticker_locator)
     cs = plt.contourf(x1, x2, z, locator=locator(), cmap='viridis_r',
                       alpha=0.7)
-    plt.scatter(expxkmin[0],expxkmin[1], marker='D', c='red', s=40,
-		label=expminstr, alpha=1.0)
+    plt.scatter(expxkmin[0], expxkmin[1], marker='D', c='red', s=30,
+                label=expminstr)
     for trial in trials:
+        # Plot initial point.
+        x0 = np.array(meta['x0'][trial-1]).reshape(-1,2)
+        plt.scatter(x0[:,0], x0[:,1], marker='X', c='dodgerblue', s=30,
+                    label='$x_0$')
+        # Plot solution trajectory.
         steps = load_steps(**params, trial=trial)
-        samples = np.linspace(0,len(steps)-1,nsamples,dtype=int)
-        xks = steps[samples,xkmind]
+        xks = steps[:,xkmind]
+        if np.isnan(xks).any():
+            continue  # Skip current solution.
         xks = np.clip(xks, a_min=bounds[::2], a_max=bounds[1::2])
-        plt.plot([xk[0] for xk in xks],
-                 [xk[1] for xk in xks],
-                 marker=marker, c=color, alpha=1.0,
+        plt.plot([xk[0] for xk in xks], [xk[1] for xk in xks],
+                 marker='.', ms=5, markevery=0.25,
+                 ls='-', lw=1, c=color,
                  label='$x_k$, trial={:d}'.format(trial))
     plt.suptitle('Solution Trajectories: {0} Function'.format(funcstr))
-    plt.title('{0} {1} {2} {3}'.format(algstr, minstr, nitstr,
-                                       algmetastr))
+    plt.title(titlestr)
     plt.xlabel('x1')
     plt.xlim(bounds[:2])
     plt.ylabel('x2')
@@ -222,8 +230,6 @@ def plot2d(**kwargs):
             'alg': 'gradient_descent',
             'func': 'rosenbrock',
             'bounds': [-2.,2.,-2.,2.],
-            'ngridpts': 500,
-            'nsamples': 20,
             'ticker_locator': 'LogLocator',
             'colorbar_label': 'log(z)',
         },
@@ -231,8 +237,6 @@ def plot2d(**kwargs):
             'alg': 'bfgs',
             'func': 'rosenbrock',
             'bounds': [-2.,2.,-2.,2.],
-            'ngridpts': 500,
-            'nsamples': 20,
             'ticker_locator': 'LogLocator',
             'colorbar_label': 'log(z)',
         },
@@ -240,8 +244,6 @@ def plot2d(**kwargs):
             'alg': 'simulated_annealing',
             'func': 'rosenbrock',
             'bounds': [-2.,2.,-2.,2.],
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(3,5),
             'ticker_locator': 'LogLocator',
             'colorbar_label': 'log(z)',
@@ -250,8 +252,6 @@ def plot2d(**kwargs):
             'alg': 'particle_swarm',
             'func': 'rosenbrock',
             'bounds': [-2.,2.,-2.,2.],
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(4,6),
             'ticker_locator': 'LogLocator',
             'colorbar_label': 'log(z)',
@@ -260,8 +260,6 @@ def plot2d(**kwargs):
             'alg': 'gradient_descent',
             'func': 'goldstein_price',
             'bounds': [-2.,2.,-2.,2.],
-            'ngridpts': 500,
-            'nsamples': 20,
             'ticker_locator': 'LogLocator',
             'colorbar_label': 'log(z)',
         },
@@ -269,8 +267,6 @@ def plot2d(**kwargs):
             'alg': 'bfgs',
             'func': 'goldstein_price',
             'bounds': [-2.,2.,-2.,2.],
-            'ngridpts': 500,
-            'nsamples': 20,
             'ticker_locator': 'LogLocator',
             'colorbar_label': 'log(z)',
         },
@@ -278,8 +274,6 @@ def plot2d(**kwargs):
             'alg': 'simulated_annealing',
             'func': 'goldstein_price',
             'bounds': [-2.,2.,-2.,2.],
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(3,5),
             'ticker_locator': 'LogLocator',
             'colorbar_label': 'log(z)',
@@ -288,8 +282,6 @@ def plot2d(**kwargs):
             'alg': 'particle_swarm',
             'func': 'goldstein_price',
             'bounds': [-2.,2.,-2.,2.],
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(4,6),
             'ticker_locator': 'LogLocator',
             'colorbar_label': 'log(z)',
@@ -298,24 +290,18 @@ def plot2d(**kwargs):
             'alg': 'simulated_annealing',
             'func': 'bartels_conn',
             'bounds': [-5.,5.,-5.,5.],
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(3,5),
         },
         {
             'alg': 'particle_swarm',
             'func': 'bartels_conn',
             'bounds': [-5.,5.,-5.,5.],
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(4,6),
         },
         {
             'alg': 'simulated_annealing',
             'func': 'egg_crate',
             'bounds': [-5.,5.,-5.,5.],
-            'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(3,5),
         },
         {
@@ -323,7 +309,6 @@ def plot2d(**kwargs):
             'func': 'egg_crate',
             'bounds': [-5.,5.,-5.,5.],
             'ngridpts': 500,
-            'nsamples': 20,
             'xkmind': slice(4,6),
         }
     ]

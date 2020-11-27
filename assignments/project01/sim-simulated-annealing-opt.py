@@ -43,7 +43,7 @@ from numpy.random import seed
 # Simulated Annealing Method
 #
 
-def simulated_annealing(fx, x0, mean, cov, tk, niter):
+def simulated_annealing(fx, x0, mean, cov, tk, bounds, niter):
     """
     simulated_annealing returns the point xk where fx is minimum
 
@@ -59,6 +59,8 @@ def simulated_annealing(fx, x0, mean, cov, tk, niter):
         covariance of multivariate normal transition distribution
     tk : function
         annealing schedule as a function of iteration number
+    bounds : numpy.ndarray
+        domain boundaries [x1_min, x1_max, ..., xn_min, xn_max]
     niter : int
         number of iterations
 
@@ -88,6 +90,7 @@ def simulated_annealing(fx, x0, mean, cov, tk, niter):
 
         # Generate a new random point.
         xk1 = xk + mvnorm()
+        xk1 = np.clip(xk1, a_min=bounds[::2], a_max=bounds[1::2])
 
         # Evaluate the function at the new point.
         fxk1 = fx(xk1)
@@ -273,7 +276,7 @@ def sim_simulated_annealing_rosenbrock(**kwargs):
     meta.update(mean=[1.,1.])
     meta.update(cov=[[1.,0.],[0.,1.]])
     meta.update(T0=1.)
-    meta.update(niter=1000)
+    meta.update(niter=200)
     meta.update(exp_xkmin=[1.,1.])
     meta.update(exp_fxkmin=0.)
 
@@ -281,7 +284,7 @@ def sim_simulated_annealing_rosenbrock(**kwargs):
     fx = rosenbrock
     mean, cov = np.array(meta['mean']), np.array(meta['cov'])
     tk = lambda k: meta['T0']/k
-    niter = meta['niter']
+    bounds, niter = meta['bounds'], meta['niter']
 
     trials = range(1,params['ntrials']+1)
     x0s = params['x0func'](**params)
@@ -289,7 +292,7 @@ def sim_simulated_annealing_rosenbrock(**kwargs):
     for ind, (trial,x0) in enumerate(zip(trials,x0s)):
         params.update(trial=trial)
         t0 = time.perf_counter()
-        xk, steps = simulated_annealing(fx, x0, mean, cov, tk, niter)
+        xk, steps = simulated_annealing(fx, x0, mean, cov, tk, bounds, niter)
         t1 = time.perf_counter()
         meta['elapsed_sec'][ind] = t1-t0
         meta['nsteps'][ind] = len(steps)
@@ -319,7 +322,7 @@ def sim_simulated_annealing_goldstein_price(**kwargs):
     fx = goldstein_price
     mean, cov = np.array(meta['mean']), np.array(meta['cov'])
     tk = lambda k: meta['T0']/k
-    niter = meta['niter']
+    bounds, niter = meta['bounds'], meta['niter']
 
     trials = range(1,params['ntrials']+1)
     x0s = params['x0func'](**params)
@@ -327,7 +330,7 @@ def sim_simulated_annealing_goldstein_price(**kwargs):
     for ind, (trial,x0) in enumerate(zip(trials,x0s)):
         params.update(trial=trial)
         t0 = time.perf_counter()
-        xk, steps = simulated_annealing(fx, x0, mean, cov, tk, niter)
+        xk, steps = simulated_annealing(fx, x0, mean, cov, tk, bounds, niter)
         t1 = time.perf_counter()
         meta['elapsed_sec'][ind] = t1-t0
         meta['nsteps'][ind] = len(steps)
@@ -349,7 +352,7 @@ def sim_simulated_annealing_bartels_conn(**kwargs):
     meta.update(mean=[1.,1.])
     meta.update(cov=[[1.,0.],[0.,1.]])
     meta.update(T0=1.)
-    meta.update(niter=1000)
+    meta.update(niter=300)
     meta.update(exp_xkmin=[0.,0.])
     meta.update(exp_fxkmin=1.)
 
@@ -357,7 +360,7 @@ def sim_simulated_annealing_bartels_conn(**kwargs):
     fx = bartels_conn
     mean, cov = np.array(meta['mean']), np.array(meta['cov'])
     tk = lambda k: meta['T0']/k
-    niter = meta['niter']
+    bounds, niter = meta['bounds'], meta['niter']
 
     trials = range(1,params['ntrials']+1)
     x0s = params['x0func'](**params)
@@ -365,7 +368,7 @@ def sim_simulated_annealing_bartels_conn(**kwargs):
     for ind, (trial,x0) in enumerate(zip(trials,x0s)):
         params.update(trial=trial)
         t0 = time.perf_counter()
-        xk, steps = simulated_annealing(fx, x0, mean, cov, tk, niter)
+        xk, steps = simulated_annealing(fx, x0, mean, cov, tk, bounds, niter)
         t1 = time.perf_counter()
         meta['elapsed_sec'][ind] = t1-t0
         meta['nsteps'][ind] = len(steps)
@@ -395,7 +398,7 @@ def sim_simulated_annealing_egg_crate(**kwargs):
     fx = egg_crate
     mean, cov = np.array(meta['mean']), np.array(meta['cov'])
     tk = lambda k: meta['T0']/k
-    niter = meta['niter']
+    bounds, niter = meta['bounds'], meta['niter']
 
     trials = range(1,params['ntrials']+1)
     x0s = params['x0func'](**params)
@@ -403,7 +406,7 @@ def sim_simulated_annealing_egg_crate(**kwargs):
     for ind, (trial,x0) in enumerate(zip(trials,x0s)):
         params.update(trial=trial)
         t0 = time.perf_counter()
-        xk, steps = simulated_annealing(fx, x0, mean, cov, tk, niter)
+        xk, steps = simulated_annealing(fx, x0, mean, cov, tk, bounds, niter)
         t1 = time.perf_counter()
         meta['elapsed_sec'][ind] = t1-t0
         meta['nsteps'][ind] = len(steps)

@@ -258,7 +258,7 @@ def sim_bfgs_rosenbrock(**kwargs):
     for ind, (trial,x0) in enumerate(zip(trials,x0s)):
         params.update(trial=trial)
         t0 = time.perf_counter()
-        xk, steps = bfgs(fx, gradfx, x0, tol, maxiter)
+        xk, steps = scipy_bfgs(fx, gradfx, x0, tol, maxiter)
         t1 = time.perf_counter()
         meta['elapsed_sec'][ind] = t1-t0
         meta['nsteps'][ind] = len(steps)
