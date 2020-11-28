@@ -314,7 +314,7 @@ def sim_simulated_annealing_goldstein_price(**kwargs):
     meta.update(mean=[1.,1.])
     meta.update(cov=[[1.,0.],[0.,1.]])
     meta.update(T0=1.)
-    meta.update(niter=2000)
+    meta.update(niter=1500)
     meta.update(exp_xkmin=[0.,-1.])
     meta.update(exp_fxkmin=3.)
 
@@ -352,7 +352,7 @@ def sim_simulated_annealing_bartels_conn(**kwargs):
     meta.update(mean=[1.,1.])
     meta.update(cov=[[1.,0.],[0.,1.]])
     meta.update(T0=1.)
-    meta.update(niter=300)
+    meta.update(niter=200)
     meta.update(exp_xkmin=[0.,0.])
     meta.update(exp_fxkmin=1.)
 
@@ -390,7 +390,7 @@ def sim_simulated_annealing_egg_crate(**kwargs):
     meta.update(mean=[1.,1.])
     meta.update(cov=[[1.,0.],[0.,1.]])
     meta.update(T0=1.)
-    meta.update(niter=2000)
+    meta.update(niter=1500)
     meta.update(exp_xkmin=[0.,0.])
     meta.update(exp_fxkmin=0.)
 

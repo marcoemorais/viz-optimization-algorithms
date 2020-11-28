@@ -9,7 +9,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-from matplotlib.animation import FuncAnimation, FFMpegFileWriter
+from matplotlib.animation import FuncAnimation, FFMpegWriter
 
 
 #
@@ -152,11 +152,12 @@ def anim2d_solutions(**params):
     bounds = params['bounds']
     trial = params['trial']  # Single trial only.
     xkmind = params.get('xkmind', slice(2))
+    fxkmind = params.get('fxkmind', 2)
     color = params.get('color', 'darkorange')
     ticker_locator = params.get('ticker_locator', 'LinearLocator')
     colorbar_label = params.get('colorbar_label', 'z')
     fps = params.get('fps', 30)
-    bitrate = params.get('bitrate', 5000)
+    bitrate = params.get('bitrate', 1000)
     show_legend = params.get('show_legend', True)
 
     # Imbue title with simulation meta information.
@@ -208,17 +209,30 @@ def anim2d_solutions(**params):
 
     # Load solution trajectory.
     steps = load_steps(**params)
-    xks = steps[:,xkmind]
+    nx0 = meta.get('nx0', 1)  # Multiple particles?
+    xks, fxks = steps[:,xkmind], steps[:,fxkmind]
     xks = np.clip(xks, a_min=bounds[::2], a_max=bounds[1::2])
-    nxks = 0 if np.isnan(xks).any() else len(xks)
+    nxks = 0 if np.isnan(xks).any() else len(xks)//nx0
 
-    ln, = plt.plot([], [],
-                   ls=(0, (1,1)), lw=2, c=color,
-                   label='$x_k$, trial={:d}'.format(trial))
+    txtx = bounds[0] + (bounds[1]-bounds[0])*0.5
+    txty = bounds[3] - (bounds[3]-bounds[2])*0.025
+    txt = plt.text(txtx, txty, '', ha='center', va='top')
+    lns = []
+    for _ in range(nx0):
+        ln, = plt.plot([], [],
+                       ls=(0, (1,1)), lw=2, c=color,
+                       label='$x_k$, trial={:d}'.format(trial))
+        lns.append(ln)
 
     def update(ind):
-        ln.set_data(xks[:ind+1,0], xks[:ind+1,1])
-        return ln,
+        # All of the particles store the same min.
+        txt.set_text('k={0:d} $f(x_k)$={1:{2}}'.format(ind+1, fxks[ind*nx0],
+                     '.2e' if fxks[ind*nx0] < 1e-1 else '.1f'))
+        for p in range(nx0):
+            # Starting from first position up to and incl current position.
+            p0, pN, pstep = p, (ind*nx0)+p+nx0, nx0
+            lns[p].set_data(xks[p0:pN:pstep,0], xks[p0:pN:pstep,1])
+        return lns
 
     if show_legend:
         plt.legend()
@@ -227,7 +241,8 @@ def anim2d_solutions(**params):
     if params.get('anim2dfn_fmt') is not None:
         imgn = params['anim2dfn_fmt'].format(**params)
         animfn = os.path.join(params['base_dirn'], imgn)
-        writer = FFMpegFileWriter(fps=fps, bitrate=bitrate)
+        writer = FFMpegWriter(fps=fps, bitrate=bitrate,
+                              extra_args=['-vcodec', 'libx264'])
         anim.save(animfn, writer=writer)
     plt.close(fig)
 
@@ -246,26 +261,7 @@ def anim2d(**kwargs):
             'bounds': [-2.,2.,-2.,2.],
             'ticker_locator': 'LogLocator',
             'colorbar_label': 'log(z)',
-            'fps': 200,
-        },
-        {
-            'alg': 'bfgs',
-            'func': 'rosenbrock',
-            'trial': 1,
-            'bounds': [-2.,2.,-2.,2.],
-            'ticker_locator': 'LogLocator',
-            'colorbar_label': 'log(z)',
-            'fps': 4,
-        },
-        {
-            'alg': 'simulated_annealing',
-            'func': 'rosenbrock',
-            'trial': 7,
-            'bounds': [-2.,2.,-2.,2.],
-            'xkmind': slice(3,5),
-            'ticker_locator': 'LogLocator',
-            'colorbar_label': 'log(z)',
-            'fps': 10,
+            'fps': 1000,
         },
         {
             'alg': 'gradient_descent',
@@ -278,6 +274,15 @@ def anim2d(**kwargs):
         },
         {
             'alg': 'bfgs',
+            'func': 'rosenbrock',
+            'trial': 1,
+            'bounds': [-2.,2.,-2.,2.],
+            'ticker_locator': 'LogLocator',
+            'colorbar_label': 'log(z)',
+            'fps': 4,
+        },
+        {
+            'alg': 'bfgs',
             'func': 'goldstein_price',
             'trial': 4,
             'bounds': [-2.,2.,-2.,2.],
@@ -296,13 +301,25 @@ def anim2d(**kwargs):
         },
         {
             'alg': 'simulated_annealing',
+            'func': 'rosenbrock',
+            'trial': 7,
+            'bounds': [-2.,2.,-2.,2.],
+            'xkmind': slice(3,5),
+            'fxkmind': 5,
+            'ticker_locator': 'LogLocator',
+            'colorbar_label': 'log(z)',
+            'fps': 10,
+        },
+        {
+            'alg': 'simulated_annealing',
             'func': 'goldstein_price',
             'trial': 4,
             'bounds': [-2.,2.,-2.,2.],
             'xkmind': slice(3,5),
+            'fxkmind': 5,
             'ticker_locator': 'LogLocator',
             'colorbar_label': 'log(z)',
-            'fps': 20,
+            'fps': 100,
         },
         {
             'alg': 'simulated_annealing',
@@ -310,9 +327,10 @@ def anim2d(**kwargs):
             'trial': 7,
             'bounds': [-2.,2.,-2.,2.],
             'xkmind': slice(3,5),
+            'fxkmind': 5,
             'ticker_locator': 'LogLocator',
             'colorbar_label': 'log(z)',
-            'fps': 20,
+            'fps': 100,
         },
         {
             'alg': 'simulated_annealing',
@@ -320,7 +338,8 @@ def anim2d(**kwargs):
             'trial': 1,
             'bounds': [-5.,5.,-5.,5.],
             'xkmind': slice(3,5),
-            'fps': 20,
+            'fxkmind': 5,
+            'fps': 10,
         },
         {
             'alg': 'simulated_annealing',
@@ -328,27 +347,137 @@ def anim2d(**kwargs):
             'trial': 3,
             'bounds': [-5.,5.,-5.,5.],
             'xkmind': slice(3,5),
-            'fps': 20,
+            'fxkmind': 5,
+            'fps': 10,
         },
         {
             'alg': 'simulated_annealing',
+            'func': 'bartels_conn',
+            'trial': 12,
+            'bounds': [-5.,5.,-5.,5.],
+            'xkmind': slice(3,5),
+            'fxkmind': 5,
+            'fps': 10,
+        },
+        {
+            'alg': 'simulated_annealing',
+            'func': 'egg_crate',
+            'trial': 7,
+            'bounds': [-5.,5.,-5.,5.],
+            'xkmind': slice(3,5),
+            'fxkmind': 5,
+            'fps': 100,
+        },
+        {
+            'alg': 'simulated_annealing',
+            'func': 'egg_crate',
+            'trial': 10,
+            'bounds': [-5.,5.,-5.,5.],
+            'xkmind': slice(3,5),
+            'fxkmind': 5,
+            'fps': 100,
+        },
+        {
+            'alg': 'particle_swarm',
+            'func': 'bartels_conn',
+            'trial': 7,
+            'bounds': [-5.,5.,-5.,5.],
+            'xkmind': slice(4,6),
+            'fxkmind': 9,
+            'fps': 10,
+            'color': None,
+        },
+        {
+            'alg': 'particle_swarm',
+            'func': 'bartels_conn',
+            'trial': 2,
+            'bounds': [-5.,5.,-5.,5.],
+            'xkmind': slice(4,6),
+            'fxkmind': 9,
+            'fps': 10,
+            'color': None,
+        },
+        {
+            'alg': 'particle_swarm',
+            'func': 'rosenbrock',
+            'trial': 5,
+            'bounds': [-2.,2.,-2.,2.],
+            'xkmind': slice(4,6),
+            'fxkmind': 9,
+            'ticker_locator': 'LogLocator',
+            'colorbar_label': 'log(z)',
+            'fps': 5,
+            'color': None,
+        },
+        {
+            'alg': 'particle_swarm',
             'func': 'egg_crate',
             'trial': 1,
             'bounds': [-5.,5.,-5.,5.],
-            'xkmind': slice(3,5),
-            'fps': 200,
+            'xkmind': slice(4,6),
+            'fxkmind': 9,
+            'fps': 50,
+            'color': None,
         },
         {
-            'alg': 'simulated_annealing',
+            'alg': 'particle_swarm',
             'func': 'egg_crate',
-            'trial': 4,
+            'trial': 9,
             'bounds': [-5.,5.,-5.,5.],
-            'xkmind': slice(3,5),
-            'fps': 200,
-        }
+            'xkmind': slice(4,6),
+            'fxkmind': 9,
+            'fps': 50,
+            'color': None,
+        },
+        {
+            'alg': 'particle_swarm',
+            'func': 'egg_crate',
+            'trial': 11,
+            'bounds': [-5.,5.,-5.,5.],
+            'xkmind': slice(4,6),
+            'fxkmind': 9,
+            'fps': 50,
+            'color': None,
+        },
+        {
+            'alg': 'particle_swarm',
+            'func': 'goldstein_price',
+            'trial': 1,
+            'bounds': [-2.,2.,-2.,2.],
+            'xkmind': slice(4,6),
+            'fxkmind': 9,
+            'ticker_locator': 'LogLocator',
+            'colorbar_label': 'log(z)',
+            'fps': 50,
+            'color': None,
+        },
+        {
+            'alg': 'particle_swarm',
+            'func': 'goldstein_price',
+            'trial': 2,
+            'bounds': [-2.,2.,-2.,2.],
+            'xkmind': slice(4,6),
+            'fxkmind': 9,
+            'ticker_locator': 'LogLocator',
+            'colorbar_label': 'log(z)',
+            'fps': 50,
+            'color': None,
+        },
+        {
+            'alg': 'particle_swarm',
+            'func': 'goldstein_price',
+            'trial': 8,
+            'bounds': [-2.,2.,-2.,2.],
+            'xkmind': slice(4,6),
+            'fxkmind': 9,
+            'ticker_locator': 'LogLocator',
+            'colorbar_label': 'log(z)',
+            'fps': 50,
+            'color': None,
+        },
     ]
     # One set of parameters for each algo-func combination.
-    for param in params:
+    for param in params[2:]: # Skip gradient descent.
         param.update(kwargs)
         anim2d_solutions(**param)
 

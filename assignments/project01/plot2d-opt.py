@@ -149,7 +149,7 @@ def plot2d_solutions(**params):
     funcstr = params['func'].replace('_',' ').title()
     ngridpts = params.get('ngridpts', 500)
     bounds = params['bounds']
-    trials = params['trials']
+    trial = params['trial']  # Single trial only.
     xkmind = params.get('xkmind', slice(2))
     color = params.get('color', 'darkorange')
     ticker_locator = params.get('ticker_locator', 'LinearLocator')
@@ -165,14 +165,13 @@ def plot2d_solutions(**params):
                ('alpha','$\\alpha$'),('tol','tol')]
     algmetastr = ' '.join(['{0}={1}'.format(n2, meta[n1])
                            for n1, n2 in algmeta if n1 in meta])
-    nitstr, minstr = '', ''
-    if len(trials) == 1:
-        nitstr = 'nit={0:d}'.format(meta['nsteps'][trials[0]-1])
-        minfx = meta['f(xk)'][trials[0]-1]
-        minfmt = '.2e' if minfx < 1e-1 else '.1f'
-        minstr = '$\\min(f)$={0:{1}}'.format(minfx, minfmt)
+    nitstr = 'nit={0:d}'.format(meta['nsteps'][trial-1])
+    minfx = meta['f(xk)'][trial-1]
+    minfmt = '.2e' if minfx < 1e-1 else '.1f'
+    minstr = '$\\min(f)$={0:{1}}'.format(minfx, minfmt)
     metastrs = [algstr, minstr, nitstr, algmetastr]
     titlestr = ' '.join([s for s in metastrs if len(s) > 0])
+    suptitlestr = 'Solution Trajectories: {0} Function'.format(funcstr)
 
     # Generate surface for filled contour plot.
     fx = globals()[params['func']]
@@ -180,27 +179,35 @@ def plot2d_solutions(**params):
     x1, x2, z = surface(fx, start, stop, ngridpts)
 
     fig = plt.figure(figsize=(8,6))
+
+    # Plot 2d filled contour.
     locator = getattr(ticker, ticker_locator)
     cs = plt.contourf(x1, x2, z, locator=locator(), cmap='viridis_r',
                       alpha=0.7)
+
+    # Plot expected minimum.
     plt.scatter(expxkmin[0], expxkmin[1], marker='D', c='red', s=30,
                 label=expminstr)
-    for trial in trials:
-        # Plot initial point.
-        x0 = np.array(meta['x0'][trial-1]).reshape(-1,2)
-        plt.scatter(x0[:,0], x0[:,1], marker='X', c='dodgerblue', s=30,
-                    label='$x_0$')
-        # Plot solution trajectory.
-        steps = load_steps(**params, trial=trial)
-        xks = steps[:,xkmind]
-        if np.isnan(xks).any():
-            continue  # Skip current solution.
-        xks = np.clip(xks, a_min=bounds[::2], a_max=bounds[1::2])
-        plt.plot([xk[0] for xk in xks], [xk[1] for xk in xks],
+
+    # Plot initial point.
+    x0 = np.array(meta['x0'][trial-1]).reshape(-1,2)
+    plt.scatter(x0[:,0], x0[:,1], marker='X', c='dodgerblue', s=30,
+                label='$x_0$')
+
+    # Plot solution trajectory.
+    steps = load_steps(**params)
+    nx0 = meta.get('nx0', 1)  # Multiple particles?
+    xks = steps[:,xkmind]
+    xks = np.clip(xks, a_min=bounds[::2], a_max=bounds[1::2])
+    nxks = 0 if np.isnan(xks).any() else len(xks)//nx0
+    for p in range(nx0):
+        p0, pN, pstep = p, nxks, nx0
+        plt.plot(xks[p0:pN:pstep,0], xks[p0:pN:pstep,1],
                  marker='.', ms=5, markevery=0.25,
                  ls='-', lw=1, c=color,
                  label='$x_k$, trial={:d}'.format(trial))
-    plt.suptitle('Solution Trajectories: {0} Function'.format(funcstr))
+
+    plt.suptitle(suptitlestr)
     plt.title(titlestr)
     plt.xlabel('x1')
     plt.xlim(bounds[:2])
@@ -210,8 +217,7 @@ def plot2d_solutions(**params):
     if show_legend:
         plt.legend()
     if params.get('plot2dfn_fmt') is not None:
-        trialstr = '_'.join(['{:02d}'.format(t) for t in trials])
-        imgn = params['plot2dfn_fmt'].format(**params, trialstr=trialstr)
+        imgn = params['plot2dfn_fmt'].format(**params)
         plotfn = os.path.join(params['base_dirn'], imgn)
         plt.savefig(plotfn)
     else:
@@ -255,6 +261,7 @@ def plot2d(**kwargs):
             'xkmind': slice(4,6),
             'ticker_locator': 'LogLocator',
             'colorbar_label': 'log(z)',
+            'color': None,
         },
         {
             'alg': 'gradient_descent',
@@ -285,6 +292,7 @@ def plot2d(**kwargs):
             'xkmind': slice(4,6),
             'ticker_locator': 'LogLocator',
             'colorbar_label': 'log(z)',
+            'color': None,
         },
         {
             'alg': 'simulated_annealing',
@@ -297,6 +305,7 @@ def plot2d(**kwargs):
             'func': 'bartels_conn',
             'bounds': [-5.,5.,-5.,5.],
             'xkmind': slice(4,6),
+            'color': None,
         },
         {
             'alg': 'simulated_annealing',
@@ -308,8 +317,8 @@ def plot2d(**kwargs):
             'alg': 'particle_swarm',
             'func': 'egg_crate',
             'bounds': [-5.,5.,-5.,5.],
-            'ngridpts': 500,
             'xkmind': slice(4,6),
+            'color': None,
         }
     ]
     # One set of parameters for each algo-func combination.
@@ -317,7 +326,7 @@ def plot2d(**kwargs):
         param.update(kwargs)
         # Create one-plot-per-trial.
         for trial in range(1,param['ntrials']+1):
-            param.update(trials=[trial])
+            param.update(trial=trial)
             plot2d_solutions(**param)
 
 
@@ -327,6 +336,6 @@ if __name__ == '__main__':
         'base_dirn': './sims/',
         'savefn_fmt': '{alg}-{func}-steps-{trial:02d}.npy',
         'metafn_fmt': '{alg}-{func}-meta.json',
-        'plot2dfn_fmt': '{alg}-{func}-plot2d-{trialstr}.png',
+        'plot2dfn_fmt': '{alg}-{func}-plot2d-{trial:02d}.png',
     }
     plot2d(**opts)

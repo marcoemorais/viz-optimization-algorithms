@@ -84,9 +84,12 @@ def particle_swarm(fx, x0s, omega, p1, p2, bounds, niter):
     xk_min, fxk_min = posmin[np.argmin(fxmin),:], np.min(fxmin)
 
     # Save position, velocity, and min position by particle to history.
-    npart, ndim = x0s.shape[0], x0s.shape[1]
-    steps = np.zeros((npart*niter, ndim*3+1))
-    steps[:npart,:] = np.hstack((pos, vel, posmin, fxmin[:,np.newaxis]))
+    # Also save global min position and value with each particle history.
+    npart, ndim, nvecs = x0s.shape[0], x0s.shape[1], 4
+    steps = np.zeros((npart*niter, ndim*nvecs+2))
+    steps[:npart,:] = np.hstack((pos, vel, posmin, fxmin[:,np.newaxis],
+                                 np.broadcast_to(xk_min,(npart,ndim)),
+                                 np.broadcast_to(fxk_min,(npart,1))))
 
     # Perform fixed number of iterations.
     for k in range(1,niter):
@@ -115,8 +118,10 @@ def particle_swarm(fx, x0s, omega, p1, p2, bounds, niter):
 
         # Save particle history.
         ind0 = k*npart
-        steps[ind0:ind0+npart,:] = np.hstack((pos, vel, posmin,
-                                              fxmin[:,np.newaxis]))
+        steps[ind0:ind0+npart,:] = (
+            np.hstack((pos, vel, posmin, fxmin[:,np.newaxis],
+                       np.broadcast_to(xk_min,(npart,ndim)),
+                       np.broadcast_to(fxk_min,(npart,1)))))
 
     return xk_min, steps
 
@@ -299,7 +304,7 @@ def sim_particle_swarm_rosenbrock(**kwargs):
     params.update(func='rosenbrock')
     meta = init_meta(**params)
     meta.update(bounds=[-2.,2.,-2.,2.])
-    meta.update(nx0=4)
+    meta.update(nx0=3)
     meta.update(omega=1.)
     meta.update(p1=1.)
     meta.update(p2=1.)
@@ -341,7 +346,7 @@ def sim_particle_swarm_goldstein_price(**kwargs):
     meta.update(omega=1.)
     meta.update(p1=1.)
     meta.update(p2=1.)
-    meta.update(niter=500)
+    meta.update(niter=250)
     meta.update(exp_xkmin=[0.,-1.])
     meta.update(exp_fxkmin=3.)
 
@@ -379,7 +384,7 @@ def sim_particle_swarm_bartels_conn(**kwargs):
     meta.update(omega=1.)
     meta.update(p1=1.)
     meta.update(p2=1.)
-    meta.update(niter=100)
+    meta.update(niter=50)
     meta.update(exp_xkmin=[0.,0.])
     meta.update(exp_fxkmin=1.)
 
@@ -417,7 +422,7 @@ def sim_particle_swarm_egg_crate(**kwargs):
     meta.update(omega=1.)
     meta.update(p1=1.)
     meta.update(p2=1.)
-    meta.update(niter=500)
+    meta.update(niter=250)
     meta.update(exp_xkmin=[0.,0.])
     meta.update(exp_fxkmin=0.)
 
