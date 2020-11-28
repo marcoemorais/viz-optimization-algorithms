@@ -262,6 +262,7 @@ def plot3d(**kwargs):
             'elev': 30,
             'azim': 140,
             'xkmind': slice(4,6),
+            'color': None,
         },
         {
             'alg': 'gradient_descent',
@@ -292,6 +293,7 @@ def plot3d(**kwargs):
             'elev': 25,
             'azim': 235,
             'xkmind': slice(4,6),
+            'color': None,
         },
         {
             'alg': 'simulated_annealing',
@@ -308,6 +310,7 @@ def plot3d(**kwargs):
             'elev': 25,
             'azim': 135,
             'xkmind': slice(4,6),
+            'color': None,
         },
         {
             'alg': 'simulated_annealing',
@@ -324,6 +327,7 @@ def plot3d(**kwargs):
             'elev': 70,
             'azim': 135,
             'xkmind': slice(4,6),
+            'color': None,
         }
     ]
     # One set of parameters for each algo-func combination.
