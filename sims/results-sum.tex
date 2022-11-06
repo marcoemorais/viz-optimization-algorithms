@@ -1,0 +1,18 @@
+\begin{tabular}{llrrrrrl}
+\toprule
+                 alg &             func &  ntrials &  nmin &      mae &  mnit &  msec &                  algparm \\
+\midrule
+    Gradient Descent &       Rosenbrock &       12 &    12 & 1.23e-04 &  8281 & 11.58 &  \$\textbackslash alpha\$=0.001 tol=0.01 \\
+    Gradient Descent &  Goldstein Price &       12 &     3 & 2.04e+02 &  2113 & 25.45 &  \$\textbackslash alpha\$=1e-05 tol=0.01 \\
+                BFGS &       Rosenbrock &       12 &    12 & 2.51e-06 &    28 &  0.38 &                 tol=0.01 \\
+                BFGS &  Goldstein Price &       12 &     6 & 1.49e+02 &    16 &  0.58 &                 tol=0.01 \\
+ Simulated Annealing &       Rosenbrock &       12 &    12 & 2.21e-01 &   200 &  0.30 &                \$T\_0\$=1.0 \\
+ Simulated Annealing &  Goldstein Price &       12 &     7 & 3.65e+01 &  1500 &  1.23 &                \$T\_0\$=1.0 \\
+ Simulated Annealing &     Bartels Conn &       12 &    11 & 1.80e+00 &   200 &  0.19 &                \$T\_0\$=1.0 \\
+ Simulated Annealing &        Egg Crate &       12 &     6 & 6.40e+00 &  1500 &  1.43 &                \$T\_0\$=1.0 \\
+      Particle Swarm &       Rosenbrock &       12 &    10 & 1.23e+00 &   150 &  0.07 &                      n=3 \\
+      Particle Swarm &  Goldstein Price &       12 &     9 & 2.24e+01 &   750 &  0.38 &                      n=3 \\
+      Particle Swarm &     Bartels Conn &       12 &    11 & 9.21e-01 &   150 &  0.15 &                      n=3 \\
+      Particle Swarm &        Egg Crate &       12 &     6 & 2.71e+00 &   750 &  0.43 &                      n=3 \\
+\bottomrule
+\end{tabular}
