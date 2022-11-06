@@ -2,7 +2,7 @@
 
 Jupyter notebooks, scripts, and results associated with the paper _Visualization of Optimization Algorithms_ by Marco Morais (Morais, 2020).
 
-[![BFGS solution trajectory on Rosenbrock test function](sims/bfgs-rosenbrock-plot2d-01.png)](https://youtu.be/PDk9d_65sHs "BFGS -- Rosenbrock -- Trial 1 -- 2d animation")
+![Particle Swarm solution trajectory on Egg Crate test function](sims/particle_swarm-egg_crate-plot3d-08.png)
 
 Paper is available as [tex](Optimization-Visualization-mmorais2.tex) and [pdf](Optimization-Visualization-mmorais2.pdf).
 
